@@ -1,0 +1,56 @@
+<?php
+/**
+ * ===========================================================================
+ * 快帮云建站
+ * Author: wangchao@kbyun.com
+ * Copyright (c)2019-2023 www.kbyun.cn All rights reserved.
+ * Licensed: 这不是一个自由软件，不允许对程序代码以任何形式任何目的的再发行
+ * ---------------------------------------------------------------------------
+ */
+namespace app\model\system;
+
+use app\model\Base;
+
+/**
+ *【短信模型】
+ */
+class Sms extends Base
+{
+    /**
+     *定义主键
+     * @var string 
+     */
+    protected $pk = 'itemid';
+
+    /**
+     * 短信记录（分页）
+     * @param  array   $where    条件
+     * @param  array   $order    排序
+     * @param  string  $fields   字段
+     * @param  int     $limit    条数
+     * @return array
+     */
+    public function listQuery($where=[], $order=['itemid'=>'desc'], $fields='*', $limit=0)
+    {
+        $d = request()->get('','','strip_sql');
+        $kw = $d['kw'] ?? '';
+        $fds = ['mobile','message','editor','code'];
+        $field = isset($d['fields']) && isset($fds[$d['fields']]) ? $d['fields'] : -1;
+        $sotime = $d['sotime'] ?? '';
+        $limit = $limit>0 ? $limit : (isset($d['limit']) ? intval($d['limit']) : 10);
+        if($kw!=''){
+            if($field>-1){
+                $where[] = $field==1 ? [$fds[$field],'LIKE', '%'.$kw.'%'] : [$fds[$field],'=',$kw];
+            }else{
+                $where[] = [implode('|',$fds),'LIKE', '%'.$kw.'%'];
+            }
+        }
+        if(strpos($sotime,' - ')!==false){
+            $t = explode(' - ',$sotime);
+            $where[] = ['sendtime','>=',strtotime($t[0]." 00:00:00")];
+            $where[] = ['sendtime','<=',strtotime($t[1]." 23:59:59")];
+        }
+        return $this->where($where)->order($order)->field($fields)->paginate($limit);
+    }
+
+}
